@@ -1,0 +1,53 @@
+
+name: PIXELVERSE Daily Content Manager
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # Setiap hari pukul 08.00 WIB (01.00 UTC)
+    - cron: "0 1 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pixelverse-content-manager
+  cancel-in-progress: false
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run PIXELVERSE
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          PYTHONUTF8: "1"
+        run: |
+          python -m app.main
+
+      - name: Save content history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if ! git diff --quiet -- data/content_history.json; then
+            git add data/content_history.json
+            git commit -m "Update PIXELVERSE content history"
+            git push
+          else
+            echo "Tidak ada perubahan database."
+          fi
