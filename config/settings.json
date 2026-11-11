@@ -20,7 +20,7 @@
   },
   "ai": {
     "provider": "gemini",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.8-flash",
     "ideas_per_generation": 10,
     "minimum_idea_score": 75
   },
