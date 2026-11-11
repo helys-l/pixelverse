@@ -1,0 +1,4 @@
+
+# PIXELVERSE
+# Fase 1 menggunakan Python Standard Library.
+# Tidak membutuhkan dependency eksternal dahulu.
