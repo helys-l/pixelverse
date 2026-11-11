@@ -10,7 +10,31 @@ DEFAULT_MODEL = "gemini-3.8-flash"
 
 
 class GeminiError(Exception):
-    """Kesalahan komunikasi dengan Gemini API."""
+    pass
+
+
+def extract_text(result):
+    """Mengambil teks dari respons REST Interactions API."""
+
+    # Beberapa format respons menyediakan output_text langsung.
+    direct_text = result.get("output_text")
+    if isinstance(direct_text, str) and direct_text.strip():
+        return direct_text.strip()
+
+    collected = []
+
+    # REST API mengembalikan langkah-langkah output.
+    for step in result.get("output", []):
+        if step.get("type") != "model_output":
+            continue
+
+        for item in step.get("content", []):
+            if item.get("type") == "text":
+                value = item.get("text", "")
+                if value:
+                    collected.append(value)
+
+    return "\n".join(collected).strip()
 
 
 def generate_text(
@@ -18,26 +42,21 @@ def generate_text(
     system_instruction=None,
     max_output_tokens=2048
 ):
-    """
-    Mengirim prompt ke Gemini Interactions API
-    dan mengembalikan teks hasil generasi.
-    """
-
     api_key = os.getenv("GEMINI_API_KEY")
 
     if not api_key:
-        raise GeminiError(
-            "GEMINI_API_KEY belum dikonfigurasi."
-        )
+        raise GeminiError("GEMINI_API_KEY belum dikonfigurasi.")
 
-    model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    model = os.getenv("GEMINI_MODEL") or DEFAULT_MODEL
 
     payload = {
         "model": model,
         "input": prompt,
         "generation_config": {
-            "max_output_tokens": max_output_tokens
-        }
+            "max_output_tokens": max_output_tokens,
+            "thinking_level": "low"
+        },
+        "store": False
     }
 
     if system_instruction:
@@ -54,39 +73,23 @@ def generate_text(
     )
 
     try:
-        with urllib.request.urlopen(
-            request,
-            timeout=90
-        ) as response:
-            result = json.loads(
-                response.read().decode("utf-8")
-            )
+        with urllib.request.urlopen(request, timeout=90) as response:
+            result = json.loads(response.read().decode("utf-8"))
 
     except urllib.error.HTTPError as error:
-        detail = error.read().decode(
-            "utf-8",
-            errors="replace"
-        )
-
+        detail = error.read().decode("utf-8", errors="replace")
         raise GeminiError(
             f"Gemini API HTTP {error.code}: {detail[:1000]}"
         ) from error
 
-    except urllib.error.URLError as error:
-        raise GeminiError(
-            f"Koneksi Gemini gagal: {error.reason}"
-        ) from error
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise GeminiError(f"Koneksi Gemini gagal: {error}") from error
 
-    except TimeoutError as error:
-        raise GeminiError(
-            "Permintaan Gemini melewati batas waktu."
-        ) from error
+    text = extract_text(result)
 
-    output = result.get("output_text")
-
-    if not output or not output.strip():
+    if not text:
         raise GeminiError(
-            "Gemini tidak memberikan output teks."
+            "Respons Gemini tidak berisi teks yang dapat dibaca."
         )
 
-    return output.strip()
+    return text
