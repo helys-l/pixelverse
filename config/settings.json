@@ -1,0 +1,33 @@
+
+{
+  "channel": {
+    "name": "PIXELVERSE",
+    "tagline": "Dunia dalam 30 Detik",
+    "language": "id",
+    "niche": [
+      "sains",
+      "alam",
+      "fenomena dunia"
+    ]
+  },
+  "content": {
+    "target_per_day": 1,
+    "max_duration_seconds": 30,
+    "video_ratio": "9:16",
+    "visual_style": "16-bit pixel art",
+    "avoid_repeated_topics": true,
+    "similarity_threshold": 0.80
+  },
+  "ai": {
+    "provider": "gemini",
+    "model": "gemini-2.5-flash",
+    "ideas_per_generation": 10,
+    "minimum_idea_score": 75
+  },
+  "safety": {
+    "require_fact_check": true,
+    "reject_uncertain_facts": true,
+    "auto_approval": true,
+    "auto_publish": false
+  }
+}
